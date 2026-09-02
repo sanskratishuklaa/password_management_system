@@ -1,26 +1,16 @@
 package handler
 
-import (
-	"encoding/json"
-	"net/http"
-)
-
+import "github.com/gin-gonic/gin"
 
 type HealthResponse struct {
 	Status string `json:"status"`
 }
 
-func Health(w http.ResponseWriter, r *http.Request) {
+func Health(c *gin.Context) {
+
 	response := HealthResponse{
 		Status: "ok",
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
-	err := json.NewEncoder(w).Encode(response)
-	if err != nil {
-		http.Error(w, "Failed to create Response", http.StatusInternalServerError)
-		return
-
-	}
+	c.JSON(200, response)
 }
