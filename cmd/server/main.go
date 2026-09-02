@@ -14,36 +14,33 @@ import (
 
 func main() {
 
-	// Connect to PostgreSQL database
 	db, err := config.ConnectDatabase()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Close database connection when application stops
+
 	defer db.Close(context.Background())
 
 	log.Println("Database Connected Successfully")
 
-	// Create repository
+
 	userRepository := repository.NewUserRepository(db)
-
-	// Create service
+	
 	userService := service.NewUserService(userRepository)
-
-	// Create authentication handler
 	authHandler := handler.NewAuthHandler(userService)
 
-	// Create Gin router
+	
 	router := gin.Default()
 
-	// Health route
+	
 	router.GET("/api/v1/health", handler.Health)
 
-	// Authentication route
-	router.POST("/api/v1/auth/register", authHandler.Register)
 
-	// Start server
+	router.POST("/api/v1/auth/register", authHandler.Register)
+	router.POST("/api/v1/auth/login", authHandler.Login)
+
+	
 	log.Println("Server running on http://localhost:8080")
 
 	err = router.Run(":8080")

@@ -20,10 +20,8 @@ func NewAuthHandler(userService *service.UserService) *AuthHandler {
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
-
 	var request model.RegisterRequest
 
-	// Read JSON body
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid request body",
@@ -31,7 +29,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// Call service
 	user, err := h.userService.RegisterUser(
 		c.Request.Context(),
 		request,
@@ -44,6 +41,30 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// Success response
 	c.JSON(http.StatusCreated, user)
+}
+
+func (h *AuthHandler) Login(c *gin.Context) {
+	var request model.LoginRequest
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	user, err := h.userService.LoginUser(
+		c.Request.Context(),
+		request,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }
