@@ -15,17 +15,12 @@ import (
 )
 
 func main() {
-
-	// Load environment variables from .env
-	config.LoadEnv()
-
-	// Connect to PostgreSQL
+	// Connect to database
 	db, err := config.ConnectDatabase()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Close database connection when application stops
 	defer db.Close(context.Background())
 
 	log.Println("Database Connected Successfully")
@@ -34,30 +29,39 @@ func main() {
 	jwtSecret := os.Getenv("JWT_SECRET")
 
 	if jwtSecret == "" {
-		log.Fatal("JWT_SECRET is not configured")
+		log.Fatal("JWT_SECRET is not set")
 	}
 
-	// Create repository
 	userRepository := repository.NewUserRepository(db)
 
-	// Create service
+	vaultRepository := repository.NewVaultRepository(db)
+
 	userService := service.NewUserService(
 		userRepository,
 		jwtSecret,
 	)
 
-	// Create authentication handler
-	authHandler := handler.NewAuthHandler(userService)
+	vaultService := service.NewVaultService(
+		vaultRepository,
+	)
 
-	// Create Gin router
+	authHandler := handler.NewAuthHandler(
+		userService,
+	)
+
+	vaultHandler := handler.NewVaultHandler(
+		vaultService,
+	)
+
 	router := gin.Default()
 
-	// Public routes
+	// Health
 	router.GET(
 		"/api/v1/health",
 		handler.Health,
 	)
 
+	// Authentication
 	router.POST(
 		"/api/v1/auth/register",
 		authHandler.Register,
@@ -68,19 +72,22 @@ func main() {
 		authHandler.Login,
 	)
 
-	// JWT authentication middleware
-	authMiddleware := middleware.AuthMiddleware(jwtSecret)
-
-	// Protected routes
 	protected := router.Group("/api/v1")
-	protected.Use(authMiddleware)
 
-	protected.GET(
-		"/protected",
-		handler.Protected,
+	protected.Use(
+		middleware.AuthMiddleware(jwtSecret),
 	)
 
-	// Start server
+	protected.POST(
+		"/vault",
+		vaultHandler.CreateVaultItem,
+	)
+
+	protected.GET(
+		"/vault",
+		vaultHandler.GetVaultItems,
+	)
+
 	log.Println("Server running on http://localhost:8080")
 
 	err = router.Run(":8080")
