@@ -33,7 +33,7 @@ func (h *VaultHandler) CreateVaultItem(c *gin.Context) {
 	}
 
 	// Get authenticated user ID from JWT middleware
-	userID, exists := c.Get("userID")
+	userID, exists := c.Get("user_id")
 
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -70,7 +70,7 @@ func (h *VaultHandler) CreateVaultItem(c *gin.Context) {
 
 func (h *VaultHandler) GetVaultItems(c *gin.Context) {
 
-	userID, exists := c.Get("userID")
+	userID, exists := c.Get("user_id")
 
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -102,5 +102,155 @@ func (h *VaultHandler) GetVaultItems(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"items": vaultItems,
+	})
+}
+
+func (h *VaultHandler) GetVaultItemByID(c *gin.Context) {
+
+	itemID := c.Param("id")
+
+	if itemID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "vault item ID is required",
+		})
+		return
+	}
+
+	userID, exists := c.Get("user_id")
+
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "user ID not found",
+		})
+		return
+	}
+
+	userIDString, ok := userID.(string)
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "invalid user ID",
+		})
+		return
+	}
+
+	vaultItem, err := h.vaultService.GetVaultItemByID(
+		c.Request.Context(),
+		itemID,
+		userIDString,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "vault item not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, vaultItem)
+}
+
+func (h *VaultHandler) UpdateVaultItem(c *gin.Context) {
+
+	itemID := c.Param("id")
+
+	if itemID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "vault item ID is required",
+		})
+		return
+	}
+
+	userID, exists := c.Get("user_id")
+
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "user ID not found",
+		})
+		return
+	}
+
+	userIDString, ok := userID.(string)
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "invalid user ID",
+		})
+		return
+	}
+
+	var request model.UpdateVaultItemRequest
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	vaultItem, err := h.vaultService.UpdateVaultItem(
+		c.Request.Context(),
+		itemID,
+		userIDString,
+		request.Title,
+		request.Username,
+		request.Password,
+		request.Website,
+		request.Notes,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, vaultItem)
+}
+func (h *VaultHandler) DeleteVaultItem(c *gin.Context) {
+
+	itemID := c.Param("id")
+
+	if itemID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "vault item ID is required",
+		})
+		return
+	}
+
+	userID, exists := c.Get("user_id")
+
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "user ID not found",
+		})
+		return
+	}
+
+	userIDString, ok := userID.(string)
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "invalid user ID",
+		})
+		return
+	}
+
+	err := h.vaultService.DeleteVaultItem(
+		c.Request.Context(),
+		itemID,
+		userIDString,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "vault item not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "vault item deleted successfully",
 	})
 }

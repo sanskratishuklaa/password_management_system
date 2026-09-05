@@ -87,6 +87,18 @@ func main() {
 		"/vault",
 		vaultHandler.GetVaultItems,
 	)
+	protected.GET(
+		"/vault/:id",
+		vaultHandler.GetVaultItemByID,
+	)
+	protected.PUT(
+		"/vault/:id",
+		vaultHandler.UpdateVaultItem,
+	)
+	protected.DELETE(
+		"/vault/:id",
+		vaultHandler.DeleteVaultItem,
+	)
 
 	log.Println("Server running on http://localhost:8080")
 
